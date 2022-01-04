@@ -4,12 +4,12 @@
 data(Diabetes, package="heplots")
 
 #### Variables: 
-relwt: relative weight, expressed as the ratio of actual weight to expected weight, given the person’s height
-glufast: fasting plasma glucose level
-glutest: test plasma glucose level, a measure of glucose intolerance,
-instest: plasma insulin during test, a measure of insulin response to oral glucose,
-sspg: steady state plasma glucose, a measure of insulin resistance
-group: diagnostic group
+relwt: relative weight, expressed as the ratio of actual weight to expected weight, given the person’s height <br/>
+glufast: fasting plasma glucose level <br/>
+glutest: test plasma glucose level, a measure of glucose intolerance, <br/>
+instest: plasma insulin during test, a measure of insulin response to oral glucose, <br/>
+sspg: steady state plasma glucose, a measure of insulin resistance <br/>
+group: diagnostic group <br/>
 
 ## Libraries:
 -- ISLR <br/>
