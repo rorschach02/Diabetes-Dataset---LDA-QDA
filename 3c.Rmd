@@ -1,0 +1,158 @@
+---
+title: "3c"
+output: word_document
+---
+
+Setting up our environment and importing important libraries:
+```{r}
+### Clear the environment 
+rm(list = ls())
+
+
+### First we will set the directory of the R script 
+setwd("C:/Users/anike/Desktop/Sem 1/EAS 506 Statistical Data Mining/Homework/Homework 3")
+
+
+## Loading all the libraries 
+library(ISLR)
+library(corrplot)
+library(MASS)
+library(klaR)
+library(leaps)
+library(lattice)
+library(ggplot2)
+library(corrplot)
+library(car)
+library(caret)
+library(class)
+library(MVN)
+
+```
+
+
+Importing dataset: 
+
+```{r}
+load("Diabetes.RData")
+dim(Diabetes)
+str(Diabetes)
+summary(Diabetes)
+```
+
+So , the diabetes dataset has 6 features. 5 of them are numeric and our target varaible is a categorical variable with 3 categories : 'Normal',
+'Chemical Diabetes' and 'Overt Diabetic'.
+
+Let's find out if there is any missing value in our dataset: 
+```{r}
+
+NAmat1 = matrix(as.numeric(is.na(Diabetes)) , ncol = 6)
+nonNAdx1 = which(rowSums(NAmat1) == 0)
+length(nonNAdx1)
+dim(Diabetes)
+## so no rows have empty or null values.
+```
+So the dataset has no null value. 
+
+Now, the value of the different feature are in different size of scale. For example, relwt is between 0.71 - 1.2 range whereas glutest is in between 269-1568 range. So i need to normalize this dataset so that all the features are in one scale before working on the dataset.
+
+Normalize: 
+```{r}
+normalize <- function(x) {
+  (x -min(x)) / (max(x) - min(x))
+  
+}
+
+Diabetes_Norm <- as.data.frame(lapply(Diabetes[1:5], normalize))
+full_dataset_Diabetes <- cbind(Diabetes_Norm , Diabetes)
+full_dataset_Diabetes <- subset(full_dataset_Diabetes , select = -c(6:10))
+head(full_dataset_Diabetes , 2)
+
+```
+
+Now the full dataset is normalized. 
+
+Plotting: 
+
+```{r}
+col <- c("blue", "red", "darkgreen")[full_dataset_Diabetes$group]
+pch <- c(16,15,17)[full_dataset_Diabetes$group]
+plot(Diabetes[,1:5], col=col, pch=pch , main = "Pairwise Scatter Plots")
+```
+
+Here, almost most of the variables are correlated and has elliptical shape. So none of the feature has multivariate normal. glufast and glutest has similar spread but it's not multivariate normal. glutest and sspg also has similar spread but it's not multivariate spread either. 
+Just to be confirm, I'll do Multivariate Normality Test that's done by MVN package in R.
+
+Multivariate Test: 
+```{r}
+MVN_test <- mvn(Diabetes[1:5], subset = NULL, mvnTest = "mardia")
+MVN_test$multivariateNormality
+
+```
+So it is confirmed that the classes is not Multivariate Normal.
+
+Splitting into test and train datasets: 
+I'll split my data into train dataset (70% of the data) and test dataset(30% of the data).After splitting the train dataset had 104 row and 6 columns. The test dataset had 41 rows and 6 columns.
+
+```{r}
+set.seed(1)
+trainIndex <- createDataPartition(full_dataset_Diabetes$group, p = 0.70,list = FALSE,times = 1)
+train_data <- full_dataset_Diabetes[trainIndex,]
+test_data <- full_dataset_Diabetes[-trainIndex,]
+dim(train_data)
+dim(test_data)
+dim(full_dataset_Diabetes)
+```
+
+LDA: 
+Linear Discriminant analysis is a true decision boundary discovery algorithm. It assumes that the class has common covariance and it's decision boundary is linear separating the class.
+
+```{r}
+lda.fit <- lda(group~., data = train_data)
+lda.fit
+```
+
+So, Prior Probabilities of being in Normal category is 51%, being in Chemical Diabetic category is 25% and being in Overt Diabetic category is 23%.
+
+Fitting the LDA model on test dataset: 
+```{r}
+test_pred <- predict(lda.fit , newdata = test_data)
+test_pred_y = test_pred$class
+table(test_data$group ,test_pred_y )
+#Error
+mean(test_data$group != test_pred_y)
+```
+The Accuracy for LDA model is 73%. 
+
+QDA: 
+
+```{r}
+qda.fit <- qda(group~., data = train_data)
+qda.fit
+```
+
+So, Prior Probabilities of being in Normal category is 51%, being in Chemical Diabetic category is 25% and being in Overt Diabetic category is 23%. 
+
+
+Fitting the QDA model on test dataset: 
+
+```{r}
+qda_test_pred <- predict(qda.fit , newdata = test_data)
+qda_test_pred_y = qda_test_pred$class
+table(test_data$group ,qda_test_pred_y )
+mean(test_data$group != qda_test_pred_y)
+```
+The Accuracy for QDA model is 97%
+
+So, after fitting the model on both LDA and QDA, QDA turned out to have the better performance than LDA. This was expected as our data is not in multivariate normal form so LDA won't work properly in this dataset.
+
+Given Dataset:
+```{r}
+given_data = data.frame(relwt = c(1.86),glufast = c(184),glutest = c(68),instest = c(122),sspg = c(544),group = c('x'))
+y_lda_given_data = predict(lda.fit, newdata = given_data)
+y_qda_given_data = predict(qda.fit, newdata = given_data)
+
+y_lda_given_data
+y_qda_given_data
+
+```
+Both LDA and QDA predict that the data point will be of category 'Overt Diabetes'.
